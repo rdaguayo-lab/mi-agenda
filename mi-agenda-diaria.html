@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Agenda Diaria</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap');
+  :root {
+    --bg:#0f0f1a;--surface:#1a1a2e;--surface2:#22223a;--accent:#6c63ff;
+    --text:#e8e8f0;--muted:#8888aa;--border:rgba(255,255,255,0.08);
+    --hecho:#2ecc71;--pendiente:#f39c12;--pospuesta:#e74c3c;--radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+  .header{background:var(--surface);border-bottom:1px solid var(--border);padding:18px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  .header-left h1{font-family:'DM Serif Display',serif;font-size:22px;color:var(--text);}
+  .fecha-hoy{font-size:12px;color:var(--muted);margin-top:2px;text-transform:capitalize;}
+  .btn{background:var(--accent);color:white;border:none;padding:9px 18px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;transition:opacity .2s;}
+  .btn:hover{opacity:.88;}
+  .btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .2s;}
+  .btn-outline:hover{background:var(--surface2);}
+  .auth-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 70px);gap:20px;padding:40px 20px;text-align:center;}
+  .auth-screen .icon-big{font-size:60px;margin-bottom:10px;}
+  .auth-screen h2{font-family:'DM Serif Display',serif;font-size:28px;}
+  .auth-screen p{color:var(--muted);font-size:15px;max-width:380px;line-height:1.6;}
+  .btn-google{background:white;color:#333;border:none;padding:12px 24px;border-radius:10px;font-size:15px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:12px;box-shadow:0 2px 8px rgba(0,0,0,0.3);margin-top:10px;}
+  .btn-google:hover{box-shadow:0 4px 16px rgba(0,0,0,0.4);}
+  .main{max-width:900px;margin:0 auto;padding:28px 20px;}
+  .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;text-align:center;}
+  .stat-card .num{font-family:'DM Serif Display',serif;font-size:28px;line-height:1;margin-bottom:4px;}
+  .stat-card .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+  .stat-card.hechos .num{color:var(--hecho);}
+  .stat-card.pendientes .num{color:var(--pendiente);}
+  .stat-card.pospuestas .num{color:var(--pospuesta);}
+  .progreso-wrap{margin-bottom:28px;}
+  .progreso-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:8px;}
+  .progreso-bar{height:6px;background:var(--surface2);border-radius:100px;overflow:hidden;}
+  .progreso-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--hecho));border-radius:100px;transition:width .5s ease;}
+  .section-title{font-family:'DM Serif Display',serif;font-size:17px;color:var(--text);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+  .count-badge{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;background:var(--surface2);color:var(--muted);padding:2px 8px;border-radius:20px;}
+  .evento-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:10px;display:flex;align-items:flex-start;gap:16px;position:relative;overflow:hidden;transition:opacity .2s;}
+  .evento-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent);border-radius:3px 0 0 3px;}
+  .evento-card.hecho::before{background:var(--hecho);}
+  .evento-card.pendiente::before{background:var(--pendiente);}
+  .evento-card.pospuesta::before{background:var(--pospuesta);}
+  .evento-card.hecho{opacity:.6;}
+  .evento-card.hecho .titulo-evento{text-decoration:line-through;}
+  .hora-bloque{min-width:60px;text-align:right;}
+  .hora-inicio{font-size:14px;font-weight:500;color:var(--accent);}
+  .evento-card.hecho .hora-inicio{color:var(--hecho);}
+  .evento-card.pendiente .hora-inicio{color:var(--pendiente);}
+  .evento-card.pospuesta .hora-inicio{color:var(--pospuesta);}
+  .hora-fin{font-size:11px;color:var(--muted);}
+  .evento-info{flex:1;min-width:0;}
+  .titulo-evento{font-size:15px;font-weight:500;color:var(--text);margin-bottom:4px;}
+  .desc-evento{font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:6px;}
+  .tipo-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.4px;}
+  .tipo-badge.reunion{background:rgba(108,99,255,.15);color:#a89dff;}
+  .tipo-badge.tarea{background:rgba(255,101,132,.15);color:#ff9db4;}
+  .tipo-badge.evento{background:rgba(52,152,219,.15);color:#7ec8f5;}
+  .evento-acciones{display:flex;flex-direction:column;gap:6px;min-width:100px;}
+  .accion-btn{border:1px solid var(--border);background:var(--surface2);color:var(--muted);padding:5px 10px;border-radius:7px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:500;cursor:pointer;text-align:center;transition:all .15s;}
+  .accion-btn:hover{color:var(--text);}
+  .accion-btn.active-hecho{background:rgba(46,204,113,.15);border-color:var(--hecho);color:var(--hecho);}
+  .accion-btn.active-pendiente{background:rgba(243,156,18,.15);border-color:var(--pendiente);color:var(--pendiente);}
+  .accion-btn.active-pospuesta{background:rgba(231,76,60,.15);border-color:var(--pospuesta);color:var(--pospuesta);}
+  .empty-state{text-align:center;padding:50px 20px;color:var(--muted);}
+  .empty-state .big-icon{font-size:48px;margin-bottom:16px;}
+  .loading-state{text-align:center;padding:60px 20px;}
+  .spinner{width:36px;height:36px;border:3px solid var(--surface2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-state p{font-size:14px;color:var(--muted);}
+  .nav-fecha{display:flex;align-items:center;gap:12px;margin-bottom:24px;}
+  .nav-fecha .fecha-display{flex:1;text-align:center;font-family:'DM Serif Display',serif;font-size:18px;color:var(--text);text-transform:capitalize;}
+  .nav-btn{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;}
+  .nav-btn:hover{background:var(--surface2);}
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;color:var(--text);z-index:9999;opacity:0;transform:translateY(8px);transition:all .3s;pointer-events:none;}
+  .toast.show{opacity:1;transform:translateY(0);}
+  .section-wrap{margin-bottom:28px;}
+  .header-right{display:flex;gap:10px;align-items:center;}
+  @media(max-width:600px){.stats-bar{grid-template-columns:repeat(2,1fr);}.evento-acciones{flex-direction:row;min-width:100%;}.accion-btn{flex:1;}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>📅 Mi Agenda Diaria</h1>
+    <div class="fecha-hoy" id="fechaSubtitulo"></div>
+  </div>
+  <div class="header-right" id="headerRight">
+    <button class="btn" onclick="iniciarSesion()">Conectar Google Calendar</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="auth-screen" id="authScreen">
+    <div class="icon-big">📆</div>
+    <h2>Planifica tu día con calma</h2>
+    <p>Conecta tu Google Calendar para ver todas tus reuniones y tareas del día.</p>
+    <button class="btn-google" onclick="iniciarSesion()">
+      <svg width="20" height="20" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M23.745 12.27c0-.79-.07-1.54-.19-2.27h-11.3v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/>
+        <path fill="#34A853" d="M12.255 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96h-3.98v3.09C3.515 21.3 7.615 24 12.255 24z"/>
+        <path fill="#FBBC05" d="M5.525 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29V6.62h-3.98a11.86 11.86 0 0 0 0 10.76l3.98-3.09z"/>
+        <path fill="#EA4335" d="M12.255 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C18.205 1.19 15.495 0 12.255 0c-4.64 0-8.74 2.7-10.71 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"/>
+      </svg>
+      Iniciar sesión con Google
+    </button>
+    <p style="font-size:12px;color:var(--muted);max-width:340px;margin-top:8px;" id="statusMsg">Cargando APIs de Google...</p>
+  </div>
+
+  <div id="mainContent" style="display:none;">
+    <div class="nav-fecha">
+      <button class="nav-btn" onclick="cambiarDia(-1)">&#8592;</button>
+      <div class="fecha-display" id="fechaDisplay"></div>
+      <button class="nav-btn" onclick="cambiarDia(1)">&#8594;</button>
+      <button class="btn-outline" onclick="irHoy()" style="font-size:12px;padding:7px 12px;">Hoy</button>
+      <button class="btn-outline" onclick="cargarAgenda()" style="font-size:12px;padding:7px 12px;">↻</button>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-card total"><div class="num" id="statTotal">0</div><div class="label">Total</div></div>
+      <div class="stat-card hechos"><div class="num" id="statHechos">0</div><div class="label">Hecho</div></div>
+      <div class="stat-card pendientes"><div class="num" id="statPendientes">0</div><div class="label">Pendiente</div></div>
+      <div class="stat-card pospuestas"><div class="num" id="statPospuestas">0</div><div class="label">Pospuesta</div></div>
+    </div>
+    <div class="progreso-wrap">
+      <div class="progreso-label"><span>Progreso del día</span><span id="porcentaje">0%</span></div>
+      <div class="progreso-bar"><div class="progreso-fill" id="progresoFill" style="width:0%"></div></div>
+    </div>
+    <div class="loading-state" id="loadingState" style="display:none;"><div class="spinner"></div><p>Cargando tu agenda...</p></div>
+    <div id="eventosContainer"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== VARIABLES GLOBALES =====
+var gapiInited = false;
+var gisInited = false;
+var tokenClient = null;
+var fechaActual = new Date();
+var estados = JSON.parse(localStorage.getItem('agenda_estados') || '{}');
+var eventosDelDia = [];
+var CLIENT_ID = '312388252565-hkir2jl15m3dls0k8h2eb5f3kj56q1fk.apps.googleusercontent.com';
+var API_KEY = 'AIzaSyAmLIu3k1lPVrayMrtU-U3ozsY5phqxfew';
+var SCOPES = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly';
+
+document.getElementById('fechaSubtitulo').textContent =
+  new Date().toLocaleDateString('es-CL', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+// ===== CALLBACKS DE GOOGLE (deben ser globales) =====
+function gapiLoaded() {
+  gapi.load('client', function() {
+    gapi.client.init({
+      apiKey: API_KEY,
+      discoveryDocs: [
+        'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
+        'https://www.googleapis.com/discovery/v1/apis/tasks/v1/rest'
+      ]
+    }).then(function() {
+      gapiInited = true;
+      checkReady();
+    }).catch(function(e) {
+      console.error('Error GAPI:', e);
+      document.getElementById('statusMsg').textContent = '❌ Error API Key. Verifica restricciones en Google Cloud.';
+    });
+  });
+}
+
+function gisLoaded() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: CLIENT_ID,
+    scope: SCOPES,
+    callback: function(resp) {
+      if (resp.error) {
+        mostrarToast('❌ Error: ' + resp.error);
+        return;
+      }
+      mostrarUI();
+      cargarAgenda();
+    }
+  });
+  gisInited = true;
+  checkReady();
+}
+
+function checkReady() {
+  if (gapiInited && gisInited) {
+    document.getElementById('statusMsg').textContent = '✅ Listo — haz clic en el botón para conectar';
+  }
+}
+
+// ===== AUTH =====
+function iniciarSesion() {
+  if (!gapiInited || !gisInited) {
+    mostrarToast('⏳ Aún cargando APIs... espera unos segundos');
+    return;
+  }
+  tokenClient.requestAccessToken({prompt: 'consent'});
+}
+
+function cerrarSesion() {
+  var token = gapi.client.getToken();
+  if (token) {
+    google.accounts.oauth2.revoke(token.access_token, function(){});
+    gapi.client.setToken('');
+  }
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('mainContent').style.display = 'none';
+  document.getElementById('headerRight').innerHTML = '<button class="btn" onclick="iniciarSesion()">Conectar Google Calendar</button>';
+}
+
+// ===== UI =====
+function mostrarUI() {
+  document.getElementById('authScreen').style.display = 'none';
+  document.getElementById('mainContent').style.display = 'block';
+  document.getElementById('headerRight').innerHTML = '<button class="btn-outline" onclick="cerrarSesion()" style="font-size:12px;">Salir</button>';
+  document.getElementById('fechaDisplay').textContent =
+    fechaActual.toLocaleDateString('es-CL', {weekday:'long',day:'numeric',month:'long'});
+}
+
+function cambiarDia(delta) {
+  fechaActual = new Date(fechaActual);
+  fechaActual.setDate(fechaActual.getDate() + delta);
+  document.getElementById('fechaDisplay').textContent =
+    fechaActual.toLocaleDateString('es-CL', {weekday:'long',day:'numeric',month:'long'});
+  cargarAgenda();
+}
+
+function irHoy() {
+  fechaActual = new Date();
+  document.getElementById('fechaDisplay').textContent =
+    fechaActual.toLocaleDateString('es-CL', {weekday:'long',day:'numeric',month:'long'});
+  cargarAgenda();
+}
+
+// ===== CARGAR EVENTOS =====
+async function cargarAgenda() {
+  document.getElementById('loadingState').style.display = 'block';
+  document.getElementById('eventosContainer').innerHTML = '';
+  eventosDelDia = [];
+
+  var inicio = new Date(fechaActual); inicio.setHours(0,0,0,0);
+  var fin = new Date(fechaActual); fin.setHours(23,59,59,999);
+
+  try {
+    var resp = await gapi.client.calendar.events.list({
+      calendarId: 'primary',
+      timeMin: inicio.toISOString(),
+      timeMax: fin.toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: 100
+    });
+
+    (resp.result.items || []).forEach(function(ev) {
+      eventosDelDia.push({
+        id: 'cal_' + ev.id,
+        titulo: ev.summary || '(Sin título)',
+        desc: ev.description || '',
+        inicio: ev.start && ev.start.dateTime ? new Date(ev.start.dateTime) : null,
+        fin: ev.end && ev.end.dateTime ? new Date(ev.end.dateTime) : null,
+        todoElDia: !!(ev.start && ev.start.date && !ev.start.dateTime),
+        tipo: (ev.attendees && ev.attendees.length > 1) ? 'reunion' : 'evento',
+        location: ev.location || ''
+      });
+    });
+
+    mostrarEventos();
+  } catch(err) {
+    console.error(err);
+    mostrarToast('❌ Error al cargar el calendario');
+    document.getElementById('loadingState').style.display = 'none';
+  }
+}
+
+function mostrarEventos() {
+  document.getElementById('loadingState').style.display = 'none';
+  var container = document.getElementById('eventosContainer');
+
+  if (eventosDelDia.length === 0) {
+    container.innerHTML = '<div class="empty-state"><div class="big-icon">🌿</div><p>No hay eventos para este día.</p></div>';
+    actualizarStats(); return;
+  }
+
+  var conHora = eventosDelDia.filter(function(e){ return e.inicio && !e.todoElDia; });
+  var sinHora = eventosDelDia.filter(function(e){ return !e.inicio || e.todoElDia; });
+  var html = '';
+
+  if (conHora.length > 0) {
+    html += '<div class="section-wrap"><div class="section-title">🕐 Con horario <span class="count-badge">' + conHora.length + '</span></div>';
+    conHora.forEach(function(ev){ html += renderEvento(ev); });
+    html += '</div>';
+  }
+  if (sinHora.length > 0) {
+    html += '<div class="section-wrap"><div class="section-title">📋 Todo el día <span class="count-badge">' + sinHora.length + '</span></div>';
+    sinHora.forEach(function(ev){ html += renderEvento(ev); });
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+  actualizarStats();
+}
+
+function renderEvento(ev) {
+  var estado = estados[ev.id] || '';
+  var horaI = ev.inicio ? ev.inicio.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) : '';
+  var horaF = ev.fin ? ev.fin.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) : '';
+  var tipoBadge = ev.tipo === 'reunion'
+    ? '<span class="tipo-badge reunion">👥 Reunión</span>'
+    : '<span class="tipo-badge evento">◆ Evento</span>';
+  var desc = ev.desc ? '<div class="desc-evento">' + ev.desc.replace(/<[^>]+>/g,'') + '</div>' : '';
+  var loc = ev.location ? '<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">📍 ' + ev.location + '</div>' : '';
+  var horaBloque = ev.todoElDia
+    ? '<div class="hora-inicio" style="font-size:11px;">Todo<br>el día</div>'
+    : '<div class="hora-inicio">' + horaI + '</div><div class="hora-fin">' + horaF + '</div>';
+
+  return '<div class="evento-card ' + estado + '" id="card-' + ev.id + '">' +
+    '<div class="hora-bloque">' + horaBloque + '</div>' +
+    '<div class="evento-info"><div class="titulo-evento">' + ev.titulo + '</div>' + desc + loc + tipoBadge + '</div>' +
+    '<div class="evento-acciones">' +
+    '<button class="accion-btn ' + (estado==='hecho'?'active-hecho':'') + '" onclick="marcarEstado(\'' + ev.id + '\',\'hecho\')">✓ Hecho</button>' +
+    '<button class="accion-btn ' + (estado==='pendiente'?'active-pendiente':'') + '" onclick="marcarEstado(\'' + ev.id + '\',\'pendiente\')">⏸ Pendiente</button>' +
+    '<button class="accion-btn ' + (estado==='pospuesta'?'active-pospuesta':'') + '" onclick="marcarEstado(\'' + ev.id + '\',\'pospuesta\')">↷ Pospuesta</button>' +
+    '</div></div>';
+}
+
+function marcarEstado(id, nuevoEstado) {
+  estados[id] = estados[id] === nuevoEstado ? '' : nuevoEstado;
+  if (!estados[id]) delete estados[id];
+  localStorage.setItem('agenda_estados', JSON.stringify(estados));
+  var card = document.getElementById('card-' + id);
+  if (!card) return;
+  card.className = 'evento-card' + (estados[id] ? ' ' + estados[id] : '');
+  var btns = card.querySelectorAll('.accion-btn');
+  btns[0].className = 'accion-btn' + (estados[id]==='hecho'?' active-hecho':'');
+  btns[1].className = 'accion-btn' + (estados[id]==='pendiente'?' active-pendiente':'');
+  btns[2].className = 'accion-btn' + (estados[id]==='pospuesta'?' active-pospuesta':'');
+  actualizarStats();
+}
+
+function actualizarStats() {
+  var total = eventosDelDia.length, hechos=0, pendientes=0, pospuestas=0;
+  eventosDelDia.forEach(function(ev){
+    if(estados[ev.id]==='hecho') hechos++;
+    else if(estados[ev.id]==='pendiente') pendientes++;
+    else if(estados[ev.id]==='pospuesta') pospuestas++;
+  });
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statHechos').textContent = hechos;
+  document.getElementById('statPendientes').textContent = pendientes;
+  document.getElementById('statPospuestas').textContent = pospuestas;
+  var pct = total > 0 ? Math.round((hechos/total)*100) : 0;
+  document.getElementById('porcentaje').textContent = pct + '%';
+  document.getElementById('progresoFill').style.width = pct + '%';
+}
+
+function mostrarToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 3000);
+}
+</script>
+
+<script src="https://apis.google.com/js/api.js?onload=gapiLoaded"></script>
+<script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+
+</body>
+</html>
